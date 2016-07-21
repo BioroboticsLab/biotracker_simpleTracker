@@ -1,5 +1,7 @@
 #include "SimpleTracker.h"
 
+#include <QPainter>
+
 #include <biotracker/Registry.h>
 
 #include <opencv2/opencv.hpp>
@@ -188,20 +190,25 @@ void SimpleTracker::paint (size_t , BioTracker::Core::ProxyMat & p, const Tracki
         if (lastFrame.empty()) return;
         image = lastFrame;
     }
+}
 
+void SimpleTracker::paintOverlay(size_t , QPainter *painter, const View &) {
     for (BioTracker::Core::TrackedObject& trackedObject : m_trackedObjects) {
         std::shared_ptr<TrackedFish> fish =
                 std::dynamic_pointer_cast<TrackedFish>(trackedObject.top());
-        cv::circle(image, fish->last_known_position(), 3, fish->associated_color(), -1, 8, 0 );
+        cv::Scalar color = fish->associated_color();
+        painter->setPen(QPen(QColor(static_cast<int>(color[2]),
+                                    static_cast<int>(color[1]),
+                                    static_cast<int>(color[0]))
+        ));
+        painter->drawEllipse(QPointF(fish->last_known_position().x, fish->last_known_position().y), 3, 3);
     }
 
     for (FishCandidate& candidate : _fish_candidates) {
-        cv::Scalar color(255, 0, 0);
-        cv::circle(image, candidate.last_known_position(), 2, color, -1, 8, 0 );
+        painter->setPen(QPen(QColor(0, 0, 255)));
+        painter->drawEllipse(QPointF(candidate.last_known_position().x, candidate.last_known_position().y), 2, 2);
     }
 }
-
-void SimpleTracker::paintOverlay(size_t , QPainter *, const View &) { }
 
 
 void SimpleTracker::prepareSave() { }
@@ -212,14 +219,14 @@ void SimpleTracker::postLoad() { }
 
 // ============== Keyboard ==================
 
-void SimpleTracker::keyPressEvent(QKeyEvent *ev) { }
+void SimpleTracker::keyPressEvent(QKeyEvent *) { }
 
 // ============== Mouse ==================
 
-void SimpleTracker::mousePressEvent(QMouseEvent * e) { }
+void SimpleTracker::mousePressEvent(QMouseEvent *) { }
 
-void SimpleTracker::mouseMoveEvent(QMouseEvent * e) { }
+void SimpleTracker::mouseMoveEvent(QMouseEvent *) { }
 
-void SimpleTracker::mouseReleaseEvent(QMouseEvent * e) { }
+void SimpleTracker::mouseReleaseEvent(QMouseEvent *) { }
 
 void SimpleTracker::mouseWheelEvent(QWheelEvent *) { }

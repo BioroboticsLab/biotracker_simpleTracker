@@ -21,10 +21,6 @@ public:
 	void paint(size_t frameNumber, BioTracker::Core::ProxyMat &m, View const &view = OriginalView) override;
 	void paintOverlay(size_t frameNumber, QPainter *painter, View const &view = OriginalView) override;
 
-//	std::set<Qt::Key> const &grabbedKeys() const override {
-//		return m_grabbedKeys;
-//	}
-
 	void prepareSave() override;
 
 	void postLoad() override;
