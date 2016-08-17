@@ -70,6 +70,7 @@ add_library(simpleTracker.tracker SHARED
         SimpleTracker.cpp
         FishCandidate.cpp
         TrackedFish.cpp
+        Mapper.cpp
 )
 
 target_link_libraries(simpleTracker.tracker

@@ -7,6 +7,7 @@
 #include <biotracker/TrackingAlgorithm.h>
 #include "TrackedFish.h"
 #include "FishCandidate.h"
+#include "Mapper.h"
 
 class SimpleTracker : public BioTracker::Core::TrackingAlgorithm {
 public:
@@ -35,7 +36,8 @@ public:
 
 private:
 	cv::BackgroundSubtractorMOG2 _bg_subtractor;
-	std::vector<FishCandidate>   _fish_candidates;
+	std::vector<FishCandidate>		 _fish_candidates;
+    Mapper							 _mapper;
 
 	QMutex  lastFrameLock;
 	cv::Mat lastFrame;
