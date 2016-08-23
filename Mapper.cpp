@@ -16,17 +16,19 @@ using namespace BioTracker::Core;
 // ================= P U B L I C ====================
 Mapper::Mapper() {}
 
-std::vector<TrackedObject> Mapper::map(std::vector<TrackedObject> &trackedObjects, std::vector<cv::RotatedRect> &contourEllipses, std::vector<cv::Point2f> &centers, size_t frame){
+std::vector<TrackedObject> Mapper::map(std::vector<TrackedObject> &trackedObjects,
+                                       std::vector<cv::RotatedRect> &contourEllipses, size_t frame){
     m_trackedObjects = trackedObjects;
     for (TrackedObject& trackedObject : m_trackedObjects) {
-        trackedObject.add(frame, mergeContoursToTrackedFish(trackedObject.getId() - 1, frame - 1, contourEllipses, centers));
+        trackedObject.add(frame, mergeContoursToTrackedFish(trackedObject.getId() - 1, frame - 1, contourEllipses));
     }
 	return m_trackedObjects;
 }
 
 // ================ P R I V A T E ===================
 
-std::shared_ptr<TrackedFish> Mapper::mergeContoursToTrackedFish(size_t trackedObjectIndex, size_t frame, std::vector<cv::RotatedRect> &contourEllipses, std::vector<cv::Point2f> &centers)
+std::shared_ptr<TrackedFish> Mapper::mergeContoursToTrackedFish(size_t trackedObjectIndex, size_t frame,
+                                                                std::vector<cv::RotatedRect> &contourEllipses)
 {
 
     auto fish = m_trackedObjects[trackedObjectIndex];
@@ -66,13 +68,12 @@ std::shared_ptr<TrackedFish> Mapper::mergeContoursToTrackedFish(size_t trackedOb
 //        const bool angleConfident = correctAngle(trackedObjectIndex, frame, contourEllipses[np]);
         correctAngle(trackedObjectIndex, frame, contourEllipses[np]);
 
-		centers.erase(centers.begin() + np);
         contourEllipses.erase(contourEllipses.begin() + np);
         return newFish;
     }
     else
     {
-        return mergeContoursToTrackedFish(fpt, frame, contourEllipses, centers);
+        return mergeContoursToTrackedFish(fpt, frame, contourEllipses);
     }
 }
 

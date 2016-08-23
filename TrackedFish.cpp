@@ -3,6 +3,8 @@
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/archives/json.hpp>
 
+float TrackedFish::_averageSpeedSigma;
+
 void TrackedFish::setNextPosition(cv::Point2f position) {
     _age_of_last_known_position = 1;
     _last_known_position = position;
@@ -53,19 +55,21 @@ float TrackedFish::calculateProbabilityOfIdentity(const cv::RotatedRect &second,
     };
 
 
-    auto adjustForFrameSpeed = [](const float &sigma)
-    {
-        // TODO: need to replace 50 with real ms per frame (depending on fps of video)
-        return (sigma / 1000.0f) * static_cast<float>(50);
-    };
+//    auto adjustForFrameSpeed = [](const float &sigma)
+//    {
+//        // TODO: need to replace 50 with real ms per frame (depending on fps of video)
+//        return (sigma / 1000.0f) * static_cast<float>(50);
+//    };
 
     // 0.5cm per millisecond sounds good as a ~66% estimate - that is about 18 km/h
     // the factors are a hand-optimized scaling of the distribution's dropoff
-    const float distanceSigma = adjustForFrameSpeed(100.0f * 0.5f);
-	// TODO: replace 0.0001 with cm/px
-    const double distanceIdentity = normalDistributionPdf(distanceSigma, distance * 0.02);
+//    const float distanceSigma = adjustForFrameSpeed(100.0f * 0.5f);
+//    const float distanceSigma = sigmaForSpeed(TrackedFish::_averageSpeedPx);
+    const float distanceSigma = TrackedFish::_averageSpeedSigma;
+    const double distanceIdentity = normalDistributionPdf(distanceSigma, distance);
 
-    const double angleSigma = adjustForFrameSpeed(10.0f * static_cast<float>(CV_PI) / 2.0f);
+//    const double angleSigma = adjustForFrameSpeed(10.0f * static_cast<float>(CV_PI) / 2.0f);
+    const double angleSigma = 10.0f * static_cast<float>(CV_PI) / 2.0f;
     const double angleIdentity = normalDistributionPdf(angleSigma, absAngleDifference);
     /*std::cout << "distance: \t" << int(100.0f * distanceIdentity) << "\t\t\t angle: " << int(100.0f * angleIdentity) << std::endl;
     std::cout << "\t\t^- " << distance << "\t\t\t^-" << (180.0f * absAngleDifference / CV_PI) << "(" << first.orientation_deg() << " - " << second.orientation_deg() << ")" << std::endl;

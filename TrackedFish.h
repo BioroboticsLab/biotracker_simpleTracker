@@ -11,6 +11,8 @@ public:
     TrackedFish() {}
     virtual ~TrackedFish() override {}
 
+    static float _averageSpeedSigma;
+
     void setNextPosition(cv::Point2f position);
     void setNextPositionUnknown();
 

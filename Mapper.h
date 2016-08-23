@@ -16,14 +16,17 @@ public:
 
     Mapper();
 
-	std::vector<BioTracker::Core::TrackedObject> map(std::vector<BioTracker::Core::TrackedObject> &trackedObjects, std::vector<cv::RotatedRect> &contourEllipses, std::vector<cv::Point2f> &centers, size_t frame);
+	std::vector<BioTracker::Core::TrackedObject> map(std::vector<BioTracker::Core::TrackedObject> &trackedObjects,
+													 std::vector<cv::RotatedRect> &contourEllipses, size_t frame);
 
 private:
     std::vector<BioTracker::Core::TrackedObject> m_trackedObjects;
 
+    float _averageSpeedPx;
+
 
     std::shared_ptr<TrackedFish> mergeContoursToTrackedFish(size_t trackedObjectIndex, size_t frame,
-                                                            std::vector<cv::RotatedRect> &contourEllipses, std::vector<cv::Point2f> &centers);
+                                                            std::vector<cv::RotatedRect> &contourEllipses);
     std::tuple<size_t , float> getNearestIndexFromFishPoses(TrackedFish &fishPose,
                                                             const std::vector<cv::RotatedRect> &fishPoses);
     float estimateOrientationRad(size_t trackedObjectIndex, size_t frame, float *confidence) const;
