@@ -6,7 +6,7 @@
 #include <QLabel>
 
 #include <biotracker/TrackingAlgorithm.h>
-#include "TrackedFish.h"
+#include "FishPose.h"
 #include "FishCandidate.h"
 #include "Mapper.h"
 
@@ -15,10 +15,6 @@ Q_OBJECT
 public:
     static const View BackgroundView;
     static const View ForegroundView;
-
-	static const float MAX_TRACK_DISTANCE_PER_FRAME;
-	static const float MAX_TRACK_DISTANCE;
-	static const int   CANDIDATE_SCORE_THRESHOLD;
 
 	SimpleTracker(BioTracker::Core::Settings &settings);
 
@@ -42,7 +38,7 @@ public:
 private:
     bool                        _backgroundInitialized;
     cv::Mat                     _background;
-	std::vector<FishCandidate>  _fish_candidates;
+    size_t                      _numberOfObjects;
     Mapper						_mapper;
 
 	QMutex  lastFrameLock;
@@ -50,7 +46,6 @@ private:
 
     float    _averageSpeedPx;
 
-    size_t      _numberOfObjects;
     QLabel *    _minContourSize;
     QLabel *    _numberOfErosions;
     QLabel *    _numberOfDilations;

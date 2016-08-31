@@ -69,6 +69,7 @@ add_definitions(-DQT_NO_KEYWORDS)
 add_library(simpleTracker.tracker SHARED
         SimpleTracker.cpp
         FishCandidate.cpp
+        FishPose.cpp
         TrackedFish.cpp
         Mapper.cpp
 )

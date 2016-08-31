@@ -1,15 +1,17 @@
 #ifndef FISH_CANDIDATE_H_
 #define FISH_CANDIDATE_H_
 
-#include "TrackedFish.h"
+#include "FishPose.h"
 
 #include <cereal/access.hpp>
 #include <opencv2/opencv.hpp>
 
-class FishCandidate	: public TrackedFish
+class FishCandidate	: public FishPose
 {
 public:
     FishCandidate();
+	FishCandidate(FishPose& other, int score);
+	FishCandidate(FishCandidate& other);
     virtual ~FishCandidate() override {}
 
     void increaseScore();
