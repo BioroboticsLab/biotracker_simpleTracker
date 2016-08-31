@@ -284,48 +284,48 @@ void SimpleTracker::paintOverlay(size_t frame, QPainter *painter, const View &vi
             painter->drawEllipse(QPointF(0, 0), fish->last_known_position().size.width,
                                  fish->last_known_position().size.height);
             painter->rotate(-angleDeg);
-//            painter->drawText(QRectF(-5,-5,10.0f,10.0f), Qt::AlignCenter, std::to_string(trackedFish.getId()).c_str());
-            painter->drawText(QRectF(-5,-5,10.0f,10.0f), Qt::AlignCenter, std::to_string(i).c_str());
+            painter->drawText(QRectF(-5,-5,10.0f,10.0f), Qt::AlignCenter, std::to_string(trackedFish.getId()).c_str());
+//            painter->drawText(QRectF(-5,-5,10.0f,10.0f), Qt::AlignCenter, std::to_string(i).c_str());
             painter->translate(-fish->last_known_position().center.x, -fish->last_known_position().center.y);
 
 
-            fish = trackedFish.estimateNextPose(frame);
-            painter->setPen(QPen(QColor(125, 125, 125), 1));
-            angleDeg = static_cast<float>(fish->angle() * 180.0f / CV_PI);
-            painter->translate(fish->last_known_position().center.x, fish->last_known_position().center.y);
-            painter->rotate(angleDeg);
-            painter->drawEllipse(QPointF(0, 0), fish->last_known_position().size.width,
-                                 fish->last_known_position().size.height);
-            painter->rotate(-angleDeg);
-            painter->drawText(QRectF(-5,-5,10.0f,10.0f), Qt::AlignCenter, std::to_string(i).c_str());
-            painter->translate(-fish->last_known_position().center.x, -fish->last_known_position().center.y);
+//            fish = trackedFish.estimateNextPose(frame);
+//            painter->setPen(QPen(QColor(125, 125, 125), 1));
+//            angleDeg = static_cast<float>(fish->angle() * 180.0f / CV_PI);
+//            painter->translate(fish->last_known_position().center.x, fish->last_known_position().center.y);
+//            painter->rotate(angleDeg);
+//            painter->drawEllipse(QPointF(0, 0), fish->last_known_position().size.width,
+//                                 fish->last_known_position().size.height);
+//            painter->rotate(-angleDeg);
+//            painter->drawText(QRectF(-5,-5,10.0f,10.0f), Qt::AlignCenter, std::to_string(i).c_str());
+//            painter->translate(-fish->last_known_position().center.x, -fish->last_known_position().center.y);
 
         }
 
-        for (TrackedObject& trackedCandidate : _mapper.getFishCandidates()) {
-            std::shared_ptr<FishCandidate> candidate;
-            if(trackedCandidate.hasValuesAtFrame(frame)){
-                candidate = trackedCandidate.get<FishCandidate>(frame);
-            } else {
-                continue;
-//                candidate = std::dynamic_pointer_cast<FishCandidate>(trackedCandidate.top());
-            }
-            cv::Scalar color = candidate->associated_color();
-            painter->setPen(QPen(QColor(static_cast<int>(color[2]),
-                                        static_cast<int>(color[1]),
-                                        static_cast<int>(color[0]))
-            ));
-
-
-            float angleDeg = static_cast<float>(candidate->angle() * 180.0f / CV_PI);
-            painter->translate(candidate->last_known_position().center.x, candidate->last_known_position().center.y);
-            painter->rotate(angleDeg);
-            painter->drawEllipse(QPointF(0, 0), candidate->last_known_position().size.width,
-                                 candidate->last_known_position().size.height);
-            painter->rotate(-angleDeg);
-            painter->drawText(QRectF(-5,-5,10.0f,10.0f), Qt::AlignCenter, std::to_string(trackedCandidate.getId()).c_str());
-            painter->translate(-candidate->last_known_position().center.x, -candidate->last_known_position().center.y);
-        }
+//        for (TrackedObject& trackedCandidate : _mapper.getFishCandidates()) {
+//            std::shared_ptr<FishCandidate> candidate;
+//            if(trackedCandidate.hasValuesAtFrame(frame)){
+//                candidate = trackedCandidate.get<FishCandidate>(frame);
+//            } else {
+//                continue;
+////                candidate = std::dynamic_pointer_cast<FishCandidate>(trackedCandidate.top());
+//            }
+//            cv::Scalar color = candidate->associated_color();
+//            painter->setPen(QPen(QColor(static_cast<int>(color[2]),
+//                                        static_cast<int>(color[1]),
+//                                        static_cast<int>(color[0]))
+//            ));
+//
+//
+//            float angleDeg = static_cast<float>(candidate->angle() * 180.0f / CV_PI);
+//            painter->translate(candidate->last_known_position().center.x, candidate->last_known_position().center.y);
+//            painter->rotate(angleDeg);
+//            painter->drawEllipse(QPointF(0, 0), candidate->last_known_position().size.width,
+//                                 candidate->last_known_position().size.height);
+//            painter->rotate(-angleDeg);
+//            painter->drawText(QRectF(-5,-5,10.0f,10.0f), Qt::AlignCenter, std::to_string(trackedCandidate.getId()).c_str());
+//            painter->translate(-candidate->last_known_position().center.x, -candidate->last_known_position().center.y);
+//        }
     }
 }
 

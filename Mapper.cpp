@@ -64,14 +64,6 @@ void Mapper::map(std::vector<cv::RotatedRect> &contourEllipses, size_t frame){
                 a->setNextPositionUnknown();
                 _fishCandidates[j].add(frame, a);
             }
-            std::cout << "FishCandidate " << _fishCandidates[j].getId() << std::endl
-                      << "oldCenter: ("
-                      << _fishCandidates[j].get<FishCandidate>(frame - 1)->last_known_position().center.x
-                      << ", " << _fishCandidates[j].get<FishCandidate>(frame - 1)->last_known_position().center.y << ")"
-                      << std::endl
-                      << "newCenter: (" << _fishCandidates[j].get<FishCandidate>(frame)->last_known_position().center.x
-                      << ", " << _fishCandidates[j].get<FishCandidate>(frame)->last_known_position().center.y << ")"
-                      << std::endl;
         }
         // (2.5) Drop/Promote candidates.
         for(int i = 0; i < static_cast<int>(_fishCandidates.size()) && m_trackedObjects.size() < _numberOfObjects; i++){
@@ -104,64 +96,6 @@ void Mapper::map(std::vector<cv::RotatedRect> &contourEllipses, size_t frame){
         _fishCandidates.clear();
     }
 }
-//
-//void Mapper::map(std::vector<cv::RotatedRect> &contourEllipses, size_t frame){
-//    static cv::RNG rng(12345);
-//    // (1) Find the next contour belonging to each tracked fish (recently found fish first)
-//    std::sort(m_trackedObjects.begin(), m_trackedObjects.end(), isYounger());
-//    for (size_t i = 0; i < m_trackedObjects.size(); i++){
-//        if(!m_trackedObjects[i].hasValuesAtFrame(frame))
-//            m_trackedObjects[i].add(frame, mergeContoursToFishPose(i, frame - 1, contourEllipses));
-//    }
-//
-//    // (2) Try to find contours belonging to fish candidates, promoting to FishPose as appropriate
-//    if (m_trackedObjects.size() < _numberOfObjects) {
-//        std::sort(m_trackedObjects.begin(), m_trackedObjects.end(), isYounger());
-//        for (int i = 0; i < static_cast<int>(_fishCandidates.size()); i++){
-//            TrackedObject& fishCandidate = _fishCandidates[i];
-//            size_t c;
-//            if(fishCandidate.hasValuesAtFrame(frame - 1)){
-//                c = frame - 1;
-//            } else {
-//                c = frame;
-//                do {
-//                    c--;
-//                } while(!fishCandidate.hasValuesAtFrame(c) && c != 0);
-//                if (c == 0 && !fishCandidate.hasValuesAtFrame(c)) continue;
-//            }
-//            fishCandidate.add(frame, mergeContoursToFishCandidates(static_cast<size_t>(i), c, contourEllipses));
-//        }
-//        // (2.5) Drop/Promote candidates.
-//        for(int i = 0; i < static_cast<int>(_fishCandidates.size()) && m_trackedObjects.size() < _numberOfObjects; i++){
-//            if(_fishCandidates[i].hasValuesAtFrame(frame)){
-//                // TODO: Score Threshold needed
-//                int score = _fishCandidates[i].get<FishCandidate>(frame)->score();
-//                if(score >= 30){
-//                    std::move(_fishCandidates.begin() + i, _fishCandidates.begin() + i + 1, std::back_inserter(m_trackedObjects));
-//                    _fishCandidates.erase(_fishCandidates.begin() + i);
-//                    i--;
-//                } else if (score < 0){
-//                    _fishCandidates.erase(_fishCandidates.begin() + i);
-//                    i--;
-//                }
-//            }
-//        }
-//
-//        // (3) Create new candidates for unmatched contours
-//        for (cv::RotatedRect& contour : contourEllipses) {
-//            BioTracker::Core::TrackedObject newObject(_lastId);
-//            _lastId++;
-//            auto newFish = std::make_shared<FishCandidate>();
-//            newFish->setNextPosition(contour);
-//            newFish->set_associated_color(cv::Scalar(rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255)));
-//            newFish->setAngle(contour.angle * (static_cast<float>(CV_PI) / 180.0f));
-//            newObject.add(frame, newFish);
-//            _fishCandidates.push_back(newObject);
-//        }
-//    } else {
-//        _fishCandidates.clear();
-//    }
-//}
 
 std::vector<BioTracker::Core::TrackedObject>& Mapper::getFishCandidates(){
     return _fishCandidates;
@@ -205,35 +139,12 @@ std::tuple<size_t, std::shared_ptr<FishPose>> Mapper::mergeContoursToFishes(size
     float fptScore;
     std::tie(fpt, fptScore) = getNearestIndexFromFishPoses(*(fp.get()), fps);
 
-//    std::ostringstream output;
-//    if(trackedFish.getId() == 2){
-//
-//        output << "map oldCenter: ("
-//                  << trackedFish.get<FishPose>(frame)->last_known_position().center.x
-//                  << ", " << trackedFish.get<FishPose>(frame)->last_known_position().center.y << ")"
-//                  << std::endl
-//                  << "map newCenter: ("
-//                  << contourEllipses[np].center.x
-//                  << ", " << contourEllipses[np].center.y << ")"
-//                  << std::endl
-//                  << "fishIndex:\t" << fishIndex << "\tfpt:\t\t" << fpt << std::endl
-//                  << "score:\t\t" << score << "\tfptScore:\t" << fptScore << std::endl;
-//    }
-
     if(fpt == static_cast<int>(fishIndex)) {
 //        trackedFish.correctAngle(frame, contourEllipses[np]);
         auto newFish = std::make_shared<FishPose>();
         newFish->setNextPosition(contourEllipses[np]);
         newFish->setAngle(contourEllipses[np].angle * (static_cast<float>(CV_PI) / 180.0f));
         newFish->set_associated_color(fishes[fishIndex].get<FishPose>(frame)->associated_color());
-
-//        if(trackedFish.getId() == 2){
-//            output << "map newCenter2: ("
-//                   << newFish->last_known_position().center.x
-//                   << ", " << newFish->last_known_position().center.y << ")"
-//                   << std::endl;
-//            std::cout << output.str();
-//        }
 
         size_t trackedId = trackedFish.getId();
 
@@ -242,9 +153,6 @@ std::tuple<size_t, std::shared_ptr<FishPose>> Mapper::mergeContoursToFishes(size
 
         return std::make_tuple(trackedId, newFish);
     } else {
-//        if(trackedFish.getId() == 2){
-//            std::cout << "map else" << std::endl;
-//        }
         return mergeContoursToFishes(fpt, frame, fishes, contourEllipses);
     }
 }
