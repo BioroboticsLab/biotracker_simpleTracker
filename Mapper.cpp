@@ -206,7 +206,6 @@ std::tuple<int , float> Mapper::getNearestIndexFromFishPoses(FishPose &fishPose,
         const float probabilityOfIdentity = fishPose.calculateProbabilityOfIdentity(possiblePose, distance);
 
         if(distance > 3 * FishPose::_averageSpeed * fishPose.age_of_last_known_position()){
-            std::cout << "age of fishPose" << fishPose.age_of_last_known_position() << std::endl;
             continue;
         }
 
