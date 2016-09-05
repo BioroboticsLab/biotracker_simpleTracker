@@ -199,55 +199,55 @@ void SimpleTracker::paint (size_t, BioTracker::Core::ProxyMat & p, const Trackin
 
         p.setMat(foreground);
     } else if(view.name == SimpleTracker::BackgroundView.name) {
-//        p.setMat(_background);
+        p.setMat(_background);
 
-        cv::RNG rng(12345);
-
-        cv::Mat frameGRAY;
-        cv::cvtColor(p.getMat(), frameGRAY, CV_RGB2GRAY);
-        cv::Mat foreground;
-//        cv::subtract(frameGRAY, _background, foreground);
-        cv::subtract(_background, frameGRAY, foreground);
-//        cv::absdiff(frameGRAY, _background, foreground);
-
-        for(size_t i = 0; i < _numberOfErosions->text().toUInt(); i++){
-            cv::erode(foreground, foreground, cv::Mat());
-        }
-
-        for(size_t i = 0; i < _numberOfDilations->text().toUInt(); i++){
-            cv::dilate(foreground, foreground, cv::Mat());
-        }
-
-
-
-        for( size_t i = 0; i < static_cast<size_t>(foreground.cols); i++){
-            for( size_t j = 0; j < static_cast<size_t>(foreground.rows); j++){
-                if(foreground.at<uchar>(cv::Point(i, j)) < _diffThreshold->text().toUInt()) {
-                    foreground.at<uchar>(cv::Point(i, j)) = 0;
-                }
-            }
-        }
-
-
-
-        std::vector<std::vector<cv::Point>> contours;
-        cv::findContours(foreground, contours, CV_RETR_LIST, CV_CHAIN_APPROX_NONE);
-        // TODO: erasing small contours really best option?
-        for(size_t i = 0; i < contours.size(); i++) {
-            if(contours[i].size() < _minContourSize->text().toUInt()) {
-                contours.erase(contours.begin() + i);
-                i--;
-            }
-        }
-
-        cv::cvtColor(foreground, foreground, cv::COLOR_GRAY2RGB);
-
-        for(size_t i = 0; i < contours.size(); i++) {
-            cv::Scalar color = cv::Scalar( rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255) );
-            cv::drawContours( foreground, contours, i, color, 2, 8);
-        }
-
-        p.setMat(foreground);
+//        cv::RNG rng(12345);
+//
+//        cv::Mat frameGRAY;
+//        cv::cvtColor(p.getMat(), frameGRAY, CV_RGB2GRAY);
+//        cv::Mat foreground;
+////        cv::subtract(frameGRAY, _background, foreground);
+//        cv::subtract(_background, frameGRAY, foreground);
+////        cv::absdiff(frameGRAY, _background, foreground);
+//
+//        for(size_t i = 0; i < _numberOfErosions->text().toUInt(); i++){
+//            cv::erode(foreground, foreground, cv::Mat());
+//        }
+//
+//        for(size_t i = 0; i < _numberOfDilations->text().toUInt(); i++){
+//            cv::dilate(foreground, foreground, cv::Mat());
+//        }
+//
+//
+//
+//        for( size_t i = 0; i < static_cast<size_t>(foreground.cols); i++){
+//            for( size_t j = 0; j < static_cast<size_t>(foreground.rows); j++){
+//                if(foreground.at<uchar>(cv::Point(static_cast<int>(i), static_cast<int>(j))) < _diffThreshold->text().toUInt()) {
+//                    foreground.at<uchar>(cv::Point(static_cast<int>(i), static_cast<int>(j))) = 0;
+//                }
+//            }
+//        }
+//
+//
+//
+//        std::vector<std::vector<cv::Point>> contours;
+//        cv::findContours(foreground, contours, CV_RETR_LIST, CV_CHAIN_APPROX_NONE);
+//        // TODO: erasing small contours really best option?
+//        for(size_t i = 0; i < contours.size(); i++) {
+//            if(contours[i].size() < _minContourSize->text().toUInt()) {
+//                contours.erase(contours.begin() + i);
+//                i--;
+//            }
+//        }
+//
+//        cv::cvtColor(foreground, foreground, cv::COLOR_GRAY2RGB);
+//
+//        for(size_t i = 0; i < contours.size(); i++) {
+//            cv::Scalar color = cv::Scalar( rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255) );
+//            cv::drawContours( foreground, contours, static_cast<int>(i), color, 2, 8);
+//        }
+//
+//        p.setMat(foreground);
     } else {
         auto &image = p.getMat();
         {

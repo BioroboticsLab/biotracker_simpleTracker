@@ -26,7 +26,8 @@ private:
 
     std::tuple<size_t, std::shared_ptr<FishPose>> mergeContoursToFishes(size_t fishIndex, size_t frame,
                                                                         std::vector<BioTracker::Core::TrackedObject> &fishes,
-                                                                        std::vector<cv::RotatedRect> &contourEllipses);
+                                                                        std::vector<cv::RotatedRect> &contourEllipses,
+																		std::vector<size_t> alreadyTestedIndizies);
 
     std::shared_ptr<FishPose> mergeContoursToFishPose(size_t trackedObjectIndex, size_t frame,
                                                       std::vector<cv::RotatedRect> &contourEllipses);

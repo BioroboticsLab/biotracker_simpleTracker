@@ -24,18 +24,25 @@ void Mapper::map(std::vector<cv::RotatedRect> &contourEllipses, size_t frame){
     std::vector<std::tuple<size_t, std::shared_ptr<FishPose>>> newFishes;
 
     while(!fishes.empty() && !contourEllipses.empty()) {
-        newFishes.push_back(mergeContoursToFishes(0, frame - 1, fishes, contourEllipses));
+        newFishes.push_back(mergeContoursToFishes(0, frame - 1, fishes, contourEllipses, std::vector<size_t>(0)));
     }
 
-    for(size_t i = 0; i < newFishes.size(); i++){
-        size_t id;
-        std::shared_ptr<FishPose> fp;
-        std::tie(id, fp) = newFishes[i];
-        for(size_t j = 0; j < m_trackedObjects.size(); j++){
+	for (size_t j = 0; j < m_trackedObjects.size(); j++) {
+    //for(size_t i = 0; i < newFishes.size(); i++){
+        //for(size_t j = 0; j < m_trackedObjects.size(); j++){
+		for (size_t i = 0; i < newFishes.size(); i++) {
+			size_t id;
+			std::shared_ptr<FishPose> fp;
+			std::tie(id, fp) = newFishes[i];
             if(id == m_trackedObjects[j].getId()){
                 m_trackedObjects[j].add(frame, fp);
             }
         }
+		if (!m_trackedObjects[j].hasValuesAtFrame(frame)) {
+			std::shared_ptr<FishPose> a = std::make_shared<FishPose>(*(m_trackedObjects[j].get<FishPose>(frame - 1).get()));
+			a->setNextPositionUnknown();
+			m_trackedObjects[j].add(frame, a);
+		}
     }
 
     // (2) Try to find contours belonging to fish candidates, promoting to FishPose as appropriate
@@ -44,7 +51,8 @@ void Mapper::map(std::vector<cv::RotatedRect> &contourEllipses, size_t frame){
         std::vector<std::tuple<size_t, std::shared_ptr<FishPose>>> newFishCandidates;
 
         while(!fishCandidates.empty() && !contourEllipses.empty()) {
-            newFishCandidates.push_back(mergeContoursToFishes(0, frame - 1, fishCandidates, contourEllipses));
+            newFishCandidates.push_back(mergeContoursToFishes(0, frame - 1, fishCandidates, contourEllipses,
+                                                              std::vector<size_t>(0)));
         }
 
         for(size_t j = 0; j < _fishCandidates.size(); j++){
@@ -105,7 +113,8 @@ std::vector<BioTracker::Core::TrackedObject>& Mapper::getFishCandidates(){
 
 std::tuple<size_t, std::shared_ptr<FishPose>> Mapper::mergeContoursToFishes(size_t fishIndex, size_t frame,
                                                                             std::vector<TrackedObject> &fishes,
-                                                                            std::vector<cv::RotatedRect> &contourEllipses)
+                                                                            std::vector<cv::RotatedRect> &contourEllipses,
+                                                                            std::vector<size_t> alreadyTestedIndizies)
 {
     TrackedFish trackedFish = static_cast<TrackedFish&>(fishes.at(fishIndex));
 
@@ -122,6 +131,20 @@ std::tuple<size_t, std::shared_ptr<FishPose>> Mapper::mergeContoursToFishes(size
     auto fp = std::make_shared<FishPose>();
     fp->setNextPosition(contourEllipses.at(np));
     fp->setAngle(contourEllipses.at(np).angle * (static_cast<float>(CV_PI) / 180.0f));
+
+    if(std::find(alreadyTestedIndizies.begin(), alreadyTestedIndizies.end(), fishIndex) == alreadyTestedIndizies.end()){
+        auto newFish = std::make_shared<FishPose>();
+        newFish->setNextPosition(contourEllipses[np]);
+        newFish->setAngle(contourEllipses[np].angle * (static_cast<float>(CV_PI) / 180.0f));
+        newFish->set_associated_color(fishes[fishIndex].get<FishPose>(frame)->associated_color());
+
+        size_t trackedId = trackedFish.getId();
+
+        fishes.erase(fishes.begin() + fishIndex);
+        contourEllipses.erase(contourEllipses.begin() + np);
+
+        return std::make_tuple(trackedId, newFish);
+    }
 
     std::vector<cv::RotatedRect> fps;
     for(size_t i = 0; i < fishes.size(); i++)
@@ -153,7 +176,8 @@ std::tuple<size_t, std::shared_ptr<FishPose>> Mapper::mergeContoursToFishes(size
 
         return std::make_tuple(trackedId, newFish);
     } else {
-        return mergeContoursToFishes(fpt, frame, fishes, contourEllipses);
+        alreadyTestedIndizies.push_back(fishIndex);
+        return mergeContoursToFishes(fpt, frame, fishes, contourEllipses, alreadyTestedIndizies);
     }
 }
 

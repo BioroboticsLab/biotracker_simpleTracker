@@ -1,5 +1,4 @@
-#ifndef SimpleTracker_H
-#define SimpleTracker_H
+#pragma once
 
 #include <opencv2/opencv.hpp>
 #include <QMutex>
@@ -61,5 +60,3 @@ private Q_SLOTS:
     void setBackgroundWeight(int newValue);
     void setDiffThreshold(int newValue);
 };
-
-#endif
