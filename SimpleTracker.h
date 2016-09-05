@@ -3,6 +3,7 @@
 #include <opencv2/opencv.hpp>
 #include <QMutex>
 #include <QLabel>
+#include <QRadioButton>
 
 #include <biotracker/TrackingAlgorithm.h>
 #include "FishPose.h"
@@ -44,6 +45,11 @@ private:
 	cv::Mat lastFrame;
 
     float    _averageSpeedPx;
+	enum { Darker = 0, Brighter = 1, Both = 2 };
+    QRadioButton * _darker;
+    QRadioButton * _brighter;
+    QRadioButton * _both;
+
 
     QLabel *    _minContourSize;
     QLabel *    _numberOfErosions;
@@ -59,4 +65,5 @@ private Q_SLOTS:
     void setNumberOfDilations(int newValue);
     void setBackgroundWeight(int newValue);
     void setDiffThreshold(int newValue);
+    void substractionTypeChanged();
 };

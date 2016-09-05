@@ -4,6 +4,7 @@
 #include <QGridLayout>
 #include <QLineEdit>
 #include <QSlider>
+#include <QGroupBox>
 
 #include "TrackedFish.h"
 
@@ -101,6 +102,19 @@ SimpleTracker::SimpleTracker(BioTracker::Core::Settings &settings)
     layout->addWidget(_diffThreshold, 10, 2, 1, 1);
     layout->addWidget(diffThreshold, 11, 0, 1, 3);
 
+    QGroupBox *groupBox = new QGroupBox(tr("Objects are:"));
+    _darker = new QRadioButton(tr("Darker"));
+    _brighter = new QRadioButton(tr("Brighter"));
+    _both = new QRadioButton(tr("Both"));
+    _darker->setChecked(true);
+
+    QHBoxLayout *hbox = new QHBoxLayout;
+    hbox->addWidget(_darker);
+    hbox->addWidget(_brighter);
+    hbox->addWidget(_both);
+    groupBox->setLayout(hbox);
+    layout->addWidget(groupBox, 12, 0, 1, 3);
+
     ui->setLayout(layout);
 }
 
@@ -118,9 +132,13 @@ void SimpleTracker::track(size_t frameNumber, const cv::Mat &frame) {
 
     std::vector<std::vector<cv::Point>> contours;
     cv::Mat foreground;
-//    cv::absdiff(frameGRAY, _background, foreground);
-    cv::subtract(_background, frameGRAY, foreground);
-//    cv::subtract(frameGRAY, _background, foreground);
+    if(_darker->isChecked()){
+        cv::subtract(_background, frameGRAY, foreground);
+    } else if(_brighter->isChecked()){
+        cv::subtract(frameGRAY, _background, foreground);
+    } else if(_both->isChecked()){
+        cv::absdiff(frameGRAY, _background, foreground);
+    }
 
     for(size_t i = 0; i < _numberOfErosions->text().toUInt(); i++){
         cv::erode(foreground, foreground, cv::Mat());
@@ -177,9 +195,13 @@ void SimpleTracker::paint (size_t, BioTracker::Core::ProxyMat & p, const Trackin
         cv::cvtColor(p.getMat(), frameGRAY, CV_RGB2GRAY);
         cv::Mat foreground;
 
-//        cv::subtract(frameGRAY, _background, foreground);
-        cv::subtract(_background, frameGRAY, foreground);
-//        cv::absdiff(frameGRAY, _background, foreground);
+        if(_darker->isChecked()){
+            cv::subtract(_background, frameGRAY, foreground);
+        } else if(_brighter->isChecked()){
+            cv::subtract(frameGRAY, _background, foreground);
+        } else if(_both->isChecked()){
+            cv::absdiff(frameGRAY, _background, foreground);
+        }
 
         for(size_t i = 0; i < _numberOfErosions->text().toUInt(); i++){
             cv::erode(foreground, foreground, cv::Mat());
