@@ -9,6 +9,7 @@
 class FishPose : public BioTracker::Core::ObjectModel {
 public:
     FishPose();
+    FishPose(size_t age, cv::RotatedRect position);
     FishPose(FishPose& other);
     virtual ~FishPose() override {}
 
@@ -27,7 +28,7 @@ public:
     void setAngle(float angle);
     float angle();
 
-    float calculateProbabilityOfIdentity(const cv::RotatedRect &second, float angleImportance = 0.2f);
+    float calculateProbabilityOfIdentity(const cv::RotatedRect &second, float &distance, float angleImportance = 0.2f);
 
 protected:
     cv::RotatedRect _last_known_position;

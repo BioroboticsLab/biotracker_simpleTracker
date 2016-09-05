@@ -9,6 +9,11 @@ float FishPose::_averageSpeedSigma;
 
 FishPose::FishPose() {}
 
+FishPose::FishPose(size_t age, cv::RotatedRect position) {
+    _age_of_last_known_position = age;
+    _last_known_position = position;
+}
+
 FishPose::FishPose(FishPose& other) {
     _last_known_position = other.last_known_position();
     _age_of_last_known_position = other.age_of_last_known_position();
@@ -48,9 +53,9 @@ float FishPose::angle() {
     return _angle;
 }
 
-float FishPose::calculateProbabilityOfIdentity(const cv::RotatedRect &second, float angleImportance)
+float FishPose::calculateProbabilityOfIdentity(const cv::RotatedRect &second, float &distance, float angleImportance)
 {
-    const float distance = static_cast<float>(sqrt(double((_last_known_position.center.x - second.center.x) *
+    distance = static_cast<float>(sqrt(double((_last_known_position.center.x - second.center.x) *
                                                (_last_known_position.center.x - second.center.x) +
                                                (_last_known_position.center.y - second.center.y) *
                                                (_last_known_position.center.y - second.center.y))));

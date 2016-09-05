@@ -112,8 +112,9 @@ std::shared_ptr<FishPose> TrackedFish::estimateNextPose(size_t frame) {
     const cv::Point2f nextPositionPx = currentPose->last_known_position().center
                                        + cv::Point2f(static_cast<float>(currentSpeedPx * std::cos(currentAngle)),
                                                      static_cast<float>(-currentSpeedPx * std::sin(currentAngle)));
-    auto retFish = std::make_shared<FishPose>();
-    retFish->setNextPosition(cv::RotatedRect(nextPositionPx, currentPose->last_known_position().size, currentAngle));
+    auto retFish = std::make_shared<FishPose>(currentPose->age_of_last_known_position(),
+                                              cv::RotatedRect(nextPositionPx, currentPose->last_known_position().size, currentAngle));
+//    retFish->setNextPosition(cv::RotatedRect(nextPositionPx, currentPose->last_known_position().size, currentAngle));
     retFish->setAngle(currentAngle);
     return retFish;
 }

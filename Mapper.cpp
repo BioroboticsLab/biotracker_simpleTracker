@@ -24,7 +24,7 @@ void Mapper::map(std::vector<cv::RotatedRect> &contourEllipses, size_t frame){
     std::vector<std::tuple<size_t, std::shared_ptr<FishPose>>> newFishes;
 
     while(!fishes.empty() && !contourEllipses.empty()) {
-        newFishes.push_back(mergeContoursToFishes(0, frame - 1, fishes, contourEllipses, std::vector<size_t>(0)));
+        newFishes.push_back(mergeContoursToFishes(0, frame - 1, fishes, contourEllipses, std::vector<size_t>()));
     }
 
 	for (size_t j = 0; j < m_trackedObjects.size(); j++) {
@@ -35,6 +35,9 @@ void Mapper::map(std::vector<cv::RotatedRect> &contourEllipses, size_t frame){
 			std::shared_ptr<FishPose> fp;
 			std::tie(id, fp) = newFishes[i];
             if(id == m_trackedObjects[j].getId()){
+                if(!fp){
+                    continue;
+                }
                 m_trackedObjects[j].add(frame, fp);
             }
         }
@@ -52,7 +55,7 @@ void Mapper::map(std::vector<cv::RotatedRect> &contourEllipses, size_t frame){
 
         while(!fishCandidates.empty() && !contourEllipses.empty()) {
             newFishCandidates.push_back(mergeContoursToFishes(0, frame - 1, fishCandidates, contourEllipses,
-                                                              std::vector<size_t>(0)));
+                                                              std::vector<size_t>()));
         }
 
         for(size_t j = 0; j < _fishCandidates.size(); j++){
@@ -61,6 +64,9 @@ void Mapper::map(std::vector<cv::RotatedRect> &contourEllipses, size_t frame){
                 std::shared_ptr<FishPose> fp;
                 std::tie(id, fp) = newFishCandidates[i];
                 if(id == _fishCandidates[j].getId()){
+                    if(!fp){
+                        continue;
+                    }
                     std::shared_ptr<FishCandidate> a = std::make_shared<FishCandidate>(*fp.get(),
                                                                                        _fishCandidates[j].get<FishCandidate>(frame - 1)->score());
                     a->increaseScore();
@@ -117,19 +123,25 @@ std::tuple<size_t, std::shared_ptr<FishPose>> Mapper::mergeContoursToFishes(size
                                                                             std::vector<size_t> alreadyTestedIndizies)
 {
     TrackedFish trackedFish = static_cast<TrackedFish&>(fishes.at(fishIndex));
+    size_t trackedId = trackedFish.getId();
 
     int np(-1);
     float score(0);
 
     std::tie(np, score) = getNearestIndexFromFishPoses(trackedFish.getPoseForMapping(frame), contourEllipses);
 
+    if(np == -1){
+        fishes.erase(fishes.begin() + fishIndex);
+        return std::make_tuple(trackedId, nullptr);
+    }
 //    if(score < 0.3){
 //        fishes.erase(fishes.begin() + fishIndex);
 //        return std::make_tuple(trackedFish.getId(), std::make_shared<FishPose>(*(trackedFish.get<FishPose>(frame).get())));
 //    }
 
-    auto fp = std::make_shared<FishPose>();
-    fp->setNextPosition(contourEllipses.at(np));
+    auto fp = std::make_shared<FishPose>(trackedFish.get<FishPose>(frame)->age_of_last_known_position(),
+                                         contourEllipses.at(np));
+//    fp->setNextPosition(contourEllipses.at(np));
     fp->setAngle(contourEllipses.at(np).angle * (static_cast<float>(CV_PI) / 180.0f));
 
     if(std::find(alreadyTestedIndizies.begin(), alreadyTestedIndizies.end(), fishIndex) == alreadyTestedIndizies.end()){
@@ -137,8 +149,6 @@ std::tuple<size_t, std::shared_ptr<FishPose>> Mapper::mergeContoursToFishes(size
         newFish->setNextPosition(contourEllipses[np]);
         newFish->setAngle(contourEllipses[np].angle * (static_cast<float>(CV_PI) / 180.0f));
         newFish->set_associated_color(fishes[fishIndex].get<FishPose>(frame)->associated_color());
-
-        size_t trackedId = trackedFish.getId();
 
         fishes.erase(fishes.begin() + fishIndex);
         contourEllipses.erase(contourEllipses.begin() + np);
@@ -169,8 +179,6 @@ std::tuple<size_t, std::shared_ptr<FishPose>> Mapper::mergeContoursToFishes(size
         newFish->setAngle(contourEllipses[np].angle * (static_cast<float>(CV_PI) / 180.0f));
         newFish->set_associated_color(fishes[fishIndex].get<FishPose>(frame)->associated_color());
 
-        size_t trackedId = trackedFish.getId();
-
         fishes.erase(fishes.begin() + fishIndex);
         contourEllipses.erase(contourEllipses.begin() + np);
 
@@ -194,7 +202,13 @@ std::tuple<int , float> Mapper::getNearestIndexFromFishPoses(FishPose &fishPose,
     {
         const cv::RotatedRect &possiblePose = fishPoses[i];
         // this takes angle-direction correction into account
-        const float probabilityOfIdentity = fishPose.calculateProbabilityOfIdentity(possiblePose);
+        float distance = -1.0f;
+        const float probabilityOfIdentity = fishPose.calculateProbabilityOfIdentity(possiblePose, distance);
+
+        if(distance > 3 * FishPose::_averageSpeed * fishPose.age_of_last_known_position()){
+            std::cout << "age of fishPose" << fishPose.age_of_last_known_position() << std::endl;
+            continue;
+        }
 
         // figure out whether the probability is the new highest or second highest
         if (probabilityOfIdentity > std::get<ScoreIndex>(bestTwo[0])) // new best?
