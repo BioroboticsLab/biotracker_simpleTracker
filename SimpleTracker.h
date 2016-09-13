@@ -1,14 +1,16 @@
 #pragma once
 
-#include <opencv2/opencv.hpp>
 #include <QMutex>
 #include <QLabel>
 #include <QRadioButton>
+#include <QPainter>
 
 #include <biotracker/TrackingAlgorithm.h>
 #include "FishPose.h"
 #include "FishCandidate.h"
 #include "Mapper.h"
+
+#include <opencv2/opencv.hpp>
 
 class SimpleTracker : public BioTracker::Core::TrackingAlgorithm {
 Q_OBJECT
@@ -26,6 +28,7 @@ public:
 
 	void prepareSave() override;
 	void postLoad() override;
+    void inputChanged() override;
 
 	void keyPressEvent(QKeyEvent *ev) override;
 
@@ -36,13 +39,22 @@ public:
 	void mouseWheelEvent(QWheelEvent *e);
 
 private:
+    void paintTrackedFishes(QPainter *painter, size_t frame);
+    void resetTracks();
+
     bool                        _backgroundInitialized;
     cv::Mat                     _background;
     size_t                      _numberOfObjects;
-    Mapper						_mapper;
+    Mapper *					_mapper;
 
 	QMutex  lastFrameLock;
 	cv::Mat lastFrame;
+
+    size_t _ellipsesFrame;
+    std::vector<cv::RotatedRect> _ellipses;
+
+    size_t _foregroundFrame;
+    cv::Mat _foreground;
 
     float    _averageSpeedPx;
 	enum { Darker = 0, Brighter = 1, Both = 2 };
@@ -52,6 +64,7 @@ private:
 
 
     QLabel *    _minContourSize;
+    QLabel *    _maxContourSize;
     QLabel *    _numberOfErosions;
     QLabel *    _numberOfDilations;
     QLabel *    _backgroundWeight;
@@ -61,9 +74,10 @@ private Q_SLOTS:
     void setNumberOfObjects(const QString &newValue);
     void setAverageSpeedPx(const QString &newValue);
     void setMinContourSize(int newValue);
+    void setMaxContourSize(int newValue);
     void setNumberOfErosions(int newValue);
     void setNumberOfDilations(int newValue);
     void setBackgroundWeight(int newValue);
     void setDiffThreshold(int newValue);
-    void substractionTypeChanged();
+    void reset();
 };

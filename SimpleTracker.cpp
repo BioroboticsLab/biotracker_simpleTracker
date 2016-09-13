@@ -1,19 +1,16 @@
 #include "SimpleTracker.h"
 
-#include <QPainter>
 #include <QGridLayout>
 #include <QLineEdit>
 #include <QSlider>
 #include <QGroupBox>
+#include <QPushButton>
 
 #include "TrackedFish.h"
 
 #include <QGraphicsEllipseItem>
 
 #include <biotracker/Registry.h>
-
-#include <opencv2/opencv.hpp>
-#include <QMutexLocker>
 
 using namespace BioTracker::Core;
 
@@ -30,14 +27,15 @@ extern "C" {
 SimpleTracker::SimpleTracker(BioTracker::Core::Settings &settings)
     : TrackingAlgorithm(settings)
     , _backgroundInitialized(false)
-    , _numberOfObjects(4)
-    , _mapper(Mapper(m_trackedObjects, _numberOfObjects))
-    , _averageSpeedPx(6.0f)
+    , _numberOfObjects(6)
+    , _mapper(new Mapper(m_trackedObjects, _numberOfObjects))
+    , _averageSpeedPx(75.0f)
     , _minContourSize(new QLabel("5", getToolsWidget()))
+    , _maxContourSize(new QLabel("250", getToolsWidget()))
     , _numberOfErosions(new QLabel("2", getToolsWidget()))
-    , _numberOfDilations(new QLabel("1", getToolsWidget()))
-    , _backgroundWeight(new QLabel("0.85", getToolsWidget()))
-    , _diffThreshold(new QLabel("25", getToolsWidget()))
+    , _numberOfDilations(new QLabel("0", getToolsWidget()))
+    , _backgroundWeight(new QLabel("0.95", getToolsWidget()))
+    , _diffThreshold(new QLabel("15", getToolsWidget()))
 {
     FishPose::_averageSpeed = _averageSpeedPx;
     FishPose::_averageSpeedSigma = std::sqrt(-(_averageSpeedPx*_averageSpeedPx/2) * (1/std::log(0.66f)));
@@ -51,57 +49,6 @@ SimpleTracker::SimpleTracker(BioTracker::Core::Settings &settings)
     layout->addWidget(new QLabel("number of objects"), 0, 0, 1, 2);
     layout->addWidget(numberOfObjects, 0, 2, 1, 1);
 
-    auto averageSpeedPx = new QLineEdit();
-    averageSpeedPx->setText(QString::number(_averageSpeedPx));
-    connect(averageSpeedPx, SIGNAL(textChanged(const QString &)), this, SLOT(setAverageSpeedPx(const QString &)));
-    layout->addWidget(new QLabel("average speed (px/frame)"), 1, 0, 1, 2);
-    layout->addWidget(averageSpeedPx, 1, 2, 1, 1);
-
-    auto minContourSize = new QSlider(Qt::Horizontal);
-    minContourSize->setValue(_minContourSize->text().toInt());
-    minContourSize->setMinimum(5);
-    minContourSize->setMaximum(20);
-    connect(minContourSize, SIGNAL(valueChanged(int)), this, SLOT(setMinContourSize(int)));
-    layout->addWidget(new QLabel("minimal contour size"), 2, 0, 1, 2);
-    layout->addWidget(_minContourSize, 2, 2, 1, 1);
-    layout->addWidget(minContourSize, 3, 0, 1, 3);
-
-    auto numberOfErosions = new QSlider(Qt::Horizontal);
-    numberOfErosions->setValue(_numberOfErosions->text().toInt());
-    numberOfErosions->setMinimum(0);
-    numberOfErosions->setMaximum(5);
-    connect(numberOfErosions, SIGNAL(valueChanged(int)), this, SLOT(setNumberOfErosions(int)));
-    layout->addWidget(new QLabel("number of erosions"), 4, 0, 1, 2);
-    layout->addWidget(_numberOfErosions, 4, 2, 1, 1);
-    layout->addWidget(numberOfErosions, 5, 0, 1, 3);
-
-    auto numberOfDilations = new QSlider(Qt::Horizontal);
-    numberOfDilations->setValue(_numberOfDilations->text().toInt());
-    numberOfDilations->setMinimum(0);
-    numberOfDilations->setMaximum(5);
-    connect(numberOfDilations, SIGNAL(valueChanged(int)), this, SLOT(setNumberOfDilations(int)));
-    layout->addWidget(new QLabel("number of dilations"), 6, 0, 1, 2);
-    layout->addWidget(_numberOfDilations, 6, 2, 1, 1);
-    layout->addWidget(numberOfDilations, 7, 0, 1, 3);
-
-    auto backgroundWeight = new QSlider(Qt::Horizontal);
-    backgroundWeight->setValue(static_cast<int>(_backgroundWeight->text().toFloat() * 100));
-    backgroundWeight->setMinimum(0);
-    backgroundWeight->setMaximum(100);
-    connect(backgroundWeight, SIGNAL(valueChanged(int)), this, SLOT(setBackgroundWeight(int)));
-    layout->addWidget(new QLabel("Alpha"), 8, 0, 1, 2);
-    layout->addWidget(_backgroundWeight, 8, 2, 1, 1);
-    layout->addWidget(backgroundWeight, 9, 0, 1, 3);
-
-    auto diffThreshold = new QSlider(Qt::Horizontal);
-    diffThreshold->setValue(_diffThreshold->text().toInt());
-    diffThreshold->setMinimum(0);
-    diffThreshold->setMaximum(50);
-    connect(diffThreshold, SIGNAL(valueChanged(int)), this, SLOT(setDiffThreshold(int)));
-    layout->addWidget(new QLabel("Threshold"), 10, 0, 1, 2);
-    layout->addWidget(_diffThreshold, 10, 2, 1, 1);
-    layout->addWidget(diffThreshold, 11, 0, 1, 3);
-
     QGroupBox *groupBox = new QGroupBox(tr("Objects are:"));
     _darker = new QRadioButton(tr("Darker"));
     _brighter = new QRadioButton(tr("Brighter"));
@@ -113,7 +60,71 @@ SimpleTracker::SimpleTracker(BioTracker::Core::Settings &settings)
     hbox->addWidget(_brighter);
     hbox->addWidget(_both);
     groupBox->setLayout(hbox);
-    layout->addWidget(groupBox, 12, 0, 1, 3);
+    layout->addWidget(groupBox, 1, 0, 1, 3);
+
+    auto averageSpeedPx = new QLineEdit();
+    averageSpeedPx->setText(QString::number(_averageSpeedPx));
+    connect(averageSpeedPx, SIGNAL(textChanged(const QString &)), this, SLOT(setAverageSpeedPx(const QString &)));
+    layout->addWidget(new QLabel("average speed (px/frame)"), 2, 0, 1, 2);
+    layout->addWidget(averageSpeedPx, 2, 2, 1, 1);
+
+    auto minContourSize = new QSlider(Qt::Horizontal);
+    minContourSize->setValue(_minContourSize->text().toInt());
+    minContourSize->setMinimum(5);
+    minContourSize->setMaximum(250);
+    connect(minContourSize, SIGNAL(valueChanged(int)), this, SLOT(setMinContourSize(int)));
+    layout->addWidget(new QLabel("minimal contour size"), 3, 0, 1, 2);
+    layout->addWidget(_minContourSize, 3, 2, 1, 1);
+    layout->addWidget(minContourSize, 4, 0, 1, 3);
+
+    auto maxContourSize = new QSlider(Qt::Horizontal);
+    maxContourSize->setValue(_maxContourSize->text().toInt());
+    maxContourSize->setMinimum(5);
+    maxContourSize->setMaximum(250);
+    connect(maxContourSize, SIGNAL(valueChanged(int)), this, SLOT(setMaxContourSize(int)));
+    layout->addWidget(new QLabel("maximal contour size"), 5, 0, 1, 2);
+    layout->addWidget(_maxContourSize, 5, 2, 1, 1);
+    layout->addWidget(maxContourSize, 6, 0, 1, 3);
+
+    auto numberOfErosions = new QSlider(Qt::Horizontal);
+    numberOfErosions->setValue(_numberOfErosions->text().toInt());
+    numberOfErosions->setMinimum(0);
+    numberOfErosions->setMaximum(25);
+    connect(numberOfErosions, SIGNAL(valueChanged(int)), this, SLOT(setNumberOfErosions(int)));
+    layout->addWidget(new QLabel("number of erosions"), 7, 0, 1, 2);
+    layout->addWidget(_numberOfErosions, 7, 2, 1, 1);
+    layout->addWidget(numberOfErosions, 8, 0, 1, 3);
+
+    auto numberOfDilations = new QSlider(Qt::Horizontal);
+    numberOfDilations->setValue(_numberOfDilations->text().toInt());
+    numberOfDilations->setMinimum(0);
+    numberOfDilations->setMaximum(25);
+    connect(numberOfDilations, SIGNAL(valueChanged(int)), this, SLOT(setNumberOfDilations(int)));
+    layout->addWidget(new QLabel("number of dilations"), 9, 0, 1, 2);
+    layout->addWidget(_numberOfDilations, 9, 2, 1, 1);
+    layout->addWidget(numberOfDilations, 10, 0, 1, 3);
+
+    auto backgroundWeight = new QSlider(Qt::Horizontal);
+    backgroundWeight->setValue(static_cast<int>(_backgroundWeight->text().toFloat() * 100));
+    backgroundWeight->setMinimum(0);
+    backgroundWeight->setMaximum(100);
+    connect(backgroundWeight, SIGNAL(valueChanged(int)), this, SLOT(setBackgroundWeight(int)));
+    layout->addWidget(new QLabel("Alpha"), 11, 0, 1, 2);
+    layout->addWidget(_backgroundWeight, 11, 2, 1, 1);
+    layout->addWidget(backgroundWeight, 12, 0, 1, 3);
+
+    auto diffThreshold = new QSlider(Qt::Horizontal);
+    diffThreshold->setValue(_diffThreshold->text().toInt());
+    diffThreshold->setMinimum(0);
+    diffThreshold->setMaximum(255);
+    connect(diffThreshold, SIGNAL(valueChanged(int)), this, SLOT(setDiffThreshold(int)));
+    layout->addWidget(new QLabel("Threshold"), 13, 0, 1, 2);
+    layout->addWidget(_diffThreshold, 13, 2, 1, 1);
+    layout->addWidget(diffThreshold, 14, 0, 1, 3);
+
+    auto reset = new QPushButton("reset");
+    connect(reset, SIGNAL(clicked()), this, SLOT(reset()));
+    layout->addWidget(reset, 15, 0, 1, 3);
 
     ui->setLayout(layout);
 }
@@ -130,54 +141,58 @@ void SimpleTracker::track(size_t frameNumber, const cv::Mat &frame) {
     cv::cvtColor(frame, frameGRAY, CV_RGB2GRAY);
     _background = (_background * _backgroundWeight->text().toFloat()) + (frameGRAY * (1.0f - _backgroundWeight->text().toFloat()));
 
-    std::vector<std::vector<cv::Point>> contours;
-    cv::Mat foreground;
+    _foregroundFrame = frameNumber;
     if(_darker->isChecked()){
-        cv::subtract(_background, frameGRAY, foreground);
+        cv::subtract(_background, frameGRAY, _foreground);
     } else if(_brighter->isChecked()){
-        cv::subtract(frameGRAY, _background, foreground);
+        cv::subtract(frameGRAY, _background, _foreground);
     } else if(_both->isChecked()){
-        cv::absdiff(frameGRAY, _background, foreground);
+        cv::absdiff(frameGRAY, _background, _foreground);
     }
 
     for(size_t i = 0; i < _numberOfErosions->text().toUInt(); i++){
-        cv::erode(foreground, foreground, cv::Mat());
+        cv::erode(_foreground, _foreground, cv::Mat());
     }
 
     for(size_t i = 0; i < _numberOfDilations->text().toUInt(); i++){
-        cv::dilate(foreground, foreground, cv::Mat());
+        cv::dilate(_foreground, _foreground, cv::Mat());
     }
 
 
 
-    for( int i = 0; i < foreground.cols; i++){
-        for( int j = 0; j < foreground.rows; j++){
-            if(foreground.at<uchar>(cv::Point(i, j)) < _diffThreshold->text().toUInt()) {
-                foreground.at<uchar>(cv::Point(i, j)) = 0;
+    for( int i = 0; i < _foreground.cols; i++){
+        for( int j = 0; j < _foreground.rows; j++){
+            if(_foreground.at<uchar>(cv::Point(i, j)) < _diffThreshold->text().toUInt()) {
+                _foreground.at<uchar>(cv::Point(i, j)) = 0;
             }
         }
     }
 
 
-
+    std::vector<std::vector<cv::Point>> contours;
+    cv::Mat foreground = _foreground.clone();
     cv::findContours(foreground, contours, CV_RETR_LIST, CV_CHAIN_APPROX_NONE);
 
+    cv::cvtColor(_foreground, _foreground, cv::COLOR_GRAY2RGB);
+
     for(size_t i = 0; i < contours.size(); i++) {
-        if(contours[i].size() < _minContourSize->text().toUInt()) {
+        if(contours[i].size() < _minContourSize->text().toUInt() || contours[i].size() > _maxContourSize->text().toUInt()) {
             contours.erase(contours.begin() + i);
             i--;
         }
     }
 
-    std::vector<cv::RotatedRect> contourEllipses(contours.size());
+    _ellipses = std::vector<cv::RotatedRect>(contours.size());
 
+    _ellipsesFrame = frameNumber;
     for(size_t i = 0; i < contours.size(); i++) {
-        contourEllipses[i] = cv::fitEllipse(cv::Mat(contours[i]));
+        _ellipses[i] = cv::fitEllipse(cv::Mat(contours[i]));
     }
     // Now we know the centers of all the detected contours in the picture (center)
 
     // TRACKING
-    _mapper.map(contourEllipses, frameNumber);
+    std::vector<cv::RotatedRect> ellipses = _ellipses;
+    _mapper->map(ellipses, frameNumber);
 
     {
         QMutexLocker locker(&lastFrameLock);
@@ -185,91 +200,49 @@ void SimpleTracker::track(size_t frameNumber, const cv::Mat &frame) {
     }
 }
 
-void SimpleTracker::paint (size_t, BioTracker::Core::ProxyMat & p, const TrackingAlgorithm::View &view) {
+void SimpleTracker::paint (size_t frameNumber, BioTracker::Core::ProxyMat & p, const TrackingAlgorithm::View &view) {
+    {
+        QMutexLocker locker(&lastFrameLock);
+        lastFrame = p.getMat();
+    }
     if(!_backgroundInitialized){
         cv::cvtColor(p.getMat(), _background, CV_RGB2GRAY);
         _backgroundInitialized = true;
     }
     if(view.name == SimpleTracker::ForegroundView.name) {
-        cv::Mat frameGRAY;
-        cv::cvtColor(p.getMat(), frameGRAY, CV_RGB2GRAY);
-        cv::Mat foreground;
+        if(_foregroundFrame != frameNumber){
+            cv::Mat frameGRAY;
+            cv::cvtColor(p.getMat(), frameGRAY, CV_RGB2GRAY);
 
-        if(_darker->isChecked()){
-            cv::subtract(_background, frameGRAY, foreground);
-        } else if(_brighter->isChecked()){
-            cv::subtract(frameGRAY, _background, foreground);
-        } else if(_both->isChecked()){
-            cv::absdiff(frameGRAY, _background, foreground);
-        }
+            if(_darker->isChecked()){
+                cv::subtract(_background, frameGRAY, _foreground);
+            } else if(_brighter->isChecked()){
+                cv::subtract(frameGRAY, _background, _foreground);
+            } else if(_both->isChecked()){
+                cv::absdiff(frameGRAY, _background, _foreground);
+            }
 
-        for(size_t i = 0; i < _numberOfErosions->text().toUInt(); i++){
-            cv::erode(foreground, foreground, cv::Mat());
-        }
+            for(size_t i = 0; i < _numberOfErosions->text().toUInt(); i++){
+                cv::erode(_foreground, _foreground, cv::Mat());
+            }
 
-        for(size_t i = 0; i < _numberOfDilations->text().toUInt(); i++){
-            cv::dilate(foreground, foreground, cv::Mat());
-        }
+            for(size_t i = 0; i < _numberOfDilations->text().toUInt(); i++){
+                cv::dilate(_foreground, _foreground, cv::Mat());
+            }
 
-        for( int i = 0; i < foreground.cols; i++){
-            for( int j = 0; j < foreground.rows; j++){
-                if(foreground.at<uchar>(cv::Point(i, j)) < _diffThreshold->text().toUInt()) {
-                    foreground.at<uchar>(cv::Point(i, j)) = 0;
+            for( int i = 0; i < _foreground.cols; i++){
+                for( int j = 0; j < _foreground.rows; j++){
+                    if(_foreground.at<uchar>(cv::Point(i, j)) < _diffThreshold->text().toUInt()) {
+                        _foreground.at<uchar>(cv::Point(i, j)) = 0;
+                    }
                 }
             }
+            cv::cvtColor(_foreground, _foreground, cv::COLOR_GRAY2RGB);
         }
 
-        p.setMat(foreground);
+        p.setMat(_foreground);
     } else if(view.name == SimpleTracker::BackgroundView.name) {
         p.setMat(_background);
-
-//        cv::RNG rng(12345);
-//
-//        cv::Mat frameGRAY;
-//        cv::cvtColor(p.getMat(), frameGRAY, CV_RGB2GRAY);
-//        cv::Mat foreground;
-////        cv::subtract(frameGRAY, _background, foreground);
-//        cv::subtract(_background, frameGRAY, foreground);
-////        cv::absdiff(frameGRAY, _background, foreground);
-//
-//        for(size_t i = 0; i < _numberOfErosions->text().toUInt(); i++){
-//            cv::erode(foreground, foreground, cv::Mat());
-//        }
-//
-//        for(size_t i = 0; i < _numberOfDilations->text().toUInt(); i++){
-//            cv::dilate(foreground, foreground, cv::Mat());
-//        }
-//
-//
-//
-//        for( size_t i = 0; i < static_cast<size_t>(foreground.cols); i++){
-//            for( size_t j = 0; j < static_cast<size_t>(foreground.rows); j++){
-//                if(foreground.at<uchar>(cv::Point(static_cast<int>(i), static_cast<int>(j))) < _diffThreshold->text().toUInt()) {
-//                    foreground.at<uchar>(cv::Point(static_cast<int>(i), static_cast<int>(j))) = 0;
-//                }
-//            }
-//        }
-//
-//
-//
-//        std::vector<std::vector<cv::Point>> contours;
-//        cv::findContours(foreground, contours, CV_RETR_LIST, CV_CHAIN_APPROX_NONE);
-//        // TODO: erasing small contours really best option?
-//        for(size_t i = 0; i < contours.size(); i++) {
-//            if(contours[i].size() < _minContourSize->text().toUInt()) {
-//                contours.erase(contours.begin() + i);
-//                i--;
-//            }
-//        }
-//
-//        cv::cvtColor(foreground, foreground, cv::COLOR_GRAY2RGB);
-//
-//        for(size_t i = 0; i < contours.size(); i++) {
-//            cv::Scalar color = cv::Scalar( rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255) );
-//            cv::drawContours( foreground, contours, static_cast<int>(i), color, 2, 8);
-//        }
-//
-//        p.setMat(foreground);
     } else {
         auto &image = p.getMat();
         {
@@ -282,47 +255,81 @@ void SimpleTracker::paint (size_t, BioTracker::Core::ProxyMat & p, const Trackin
 
 void SimpleTracker::paintOverlay(size_t frame, QPainter *painter, const View &view) {
     if(view.name == SimpleTracker::ForegroundView.name) {
+        if(_ellipsesFrame != frame){
+            cv::Mat foreground = _foreground.clone();
+            std::vector<std::vector<cv::Point>> contours;
+            cv::findContours(foreground, contours, CV_RETR_LIST, CV_CHAIN_APPROX_NONE);
 
+            for(size_t i = 0; i < contours.size(); i++) {
+                if(contours[i].size() < _minContourSize->text().toUInt() || contours[i].size() > _maxContourSize->text().toUInt()) {
+                    contours.erase(contours.begin() + i);
+                    i--;
+                }
+            }
+
+            _ellipses = std::vector<cv::RotatedRect>(contours.size());
+
+            _ellipsesFrame = frame;
+            for(size_t i = 0; i < contours.size(); i++) {
+                _ellipses[i] = cv::fitEllipse(cv::Mat(contours[i]));
+            }
+        }
+
+        for( size_t i = 0; i < _ellipses.size(); i++){
+            cv::RotatedRect ellipse = _ellipses.at(i);
+            painter->setPen(QPen(QColor(0, 0, 255), 3));
+            painter->translate(ellipse.center.x, ellipse.center.y);
+            painter->rotate(ellipse.angle);
+            painter->drawEllipse(QPointF(0, 0), ellipse.size.width, ellipse.size.height);
+            painter->rotate(-ellipse.angle);
+            painter->translate(-ellipse.center.x, -ellipse.center.y);
+        }
     } else if(view.name == SimpleTracker::BackgroundView.name) {
 
     } else {
-        for( size_t i = 0; i < m_trackedObjects.size(); i++){
+        paintTrackedFishes(painter, frame);
+    }
+}
+
+void SimpleTracker::postConnect() {
+    Q_EMIT registerViews({ForegroundView, BackgroundView});
+}
+
+
+void SimpleTracker::prepareSave() { }
+
+void SimpleTracker::postLoad() { }
+
+void SimpleTracker::inputChanged() {
+    resetTracks();
+}
+
+// =============== H E L P E R S ================
+
+void SimpleTracker::paintTrackedFishes(QPainter *painter, size_t frame){
+    for( size_t i = 0; i < m_trackedObjects.size(); i++){
 //        for (BioTracker::Core::TrackedObject& trackedObject : m_trackedObjects) {
-            TrackedFish& trackedFish = static_cast<TrackedFish&>(m_trackedObjects.at(i));
-            std::shared_ptr<FishPose> fish;
-            if(trackedFish.hasValuesAtFrame(frame)){
-                fish = trackedFish.get<FishPose>(frame);
-            } else {
-                continue;
-            }
-            cv::Scalar color = fish->associated_color();
-            painter->setPen(QPen(QColor(static_cast<int>(color[2]),
-                                        static_cast<int>(color[1]),
-                                        static_cast<int>(color[0])), 3
-            ));
-            float angleDeg = static_cast<float>(fish->angle() * 180.0f / CV_PI);
-            painter->translate(fish->last_known_position().center.x, fish->last_known_position().center.y);
-            painter->rotate(angleDeg);
-            painter->drawEllipse(QPointF(0, 0), fish->last_known_position().size.width,
-                                 fish->last_known_position().size.height);
-            painter->rotate(-angleDeg);
-            painter->drawText(QRectF(-5,-5,10.0f,10.0f), Qt::AlignCenter, std::to_string(trackedFish.getId()).c_str());
-//            painter->drawText(QRectF(-5,-5,10.0f,10.0f), Qt::AlignCenter, std::to_string(i).c_str());
-            painter->translate(-fish->last_known_position().center.x, -fish->last_known_position().center.y);
-
-
-//            fish = trackedFish.estimateNextPose(frame);
-//            painter->setPen(QPen(QColor(125, 125, 125), 1));
-//            angleDeg = static_cast<float>(fish->angle() * 180.0f / CV_PI);
-//            painter->translate(fish->last_known_position().center.x, fish->last_known_position().center.y);
-//            painter->rotate(angleDeg);
-//            painter->drawEllipse(QPointF(0, 0), fish->last_known_position().size.width,
-//                                 fish->last_known_position().size.height);
-//            painter->rotate(-angleDeg);
-//            painter->drawText(QRectF(-5,-5,10.0f,10.0f), Qt::AlignCenter, std::to_string(i).c_str());
-//            painter->translate(-fish->last_known_position().center.x, -fish->last_known_position().center.y);
-
+        TrackedFish& trackedFish = static_cast<TrackedFish&>(m_trackedObjects.at(i));
+        std::shared_ptr<FishPose> fish;
+        if(trackedFish.hasValuesAtFrame(frame)){
+            fish = trackedFish.get<FishPose>(frame);
+        } else {
+            continue;
         }
+        cv::Scalar color = fish->associated_color();
+        painter->setPen(QPen(QColor(static_cast<int>(color[2]),
+                                    static_cast<int>(color[1]),
+                                    static_cast<int>(color[0])), 3
+        ));
+        float angleDeg = static_cast<float>(fish->angle() * 180.0f / CV_PI);
+        painter->translate(fish->last_known_position().center.x, fish->last_known_position().center.y);
+        painter->rotate(angleDeg);
+        painter->drawEllipse(QPointF(0, 0), fish->last_known_position().size.width,
+                             fish->last_known_position().size.height);
+        painter->rotate(-angleDeg);
+        painter->drawText(QRectF(-5,-5,10.0f,10.0f), Qt::AlignCenter, std::to_string(trackedFish.getId()).c_str());
+        painter->translate(-fish->last_known_position().center.x, -fish->last_known_position().center.y);
+    }
 
 //        for (TrackedObject& trackedCandidate : _mapper.getFishCandidates()) {
 //            std::shared_ptr<FishCandidate> candidate;
@@ -348,17 +355,14 @@ void SimpleTracker::paintOverlay(size_t frame, QPainter *painter, const View &vi
 //            painter->drawText(QRectF(-5,-5,10.0f,10.0f), Qt::AlignCenter, std::to_string(trackedCandidate.getId()).c_str());
 //            painter->translate(-candidate->last_known_position().center.x, -candidate->last_known_position().center.y);
 //        }
-    }
 }
 
-void SimpleTracker::postConnect() {
-    Q_EMIT registerViews({ForegroundView, BackgroundView});
+void SimpleTracker::resetTracks(){
+    m_trackedObjects.clear();
+    _backgroundInitialized = false;
+    _mapper = new Mapper(m_trackedObjects, _numberOfObjects);
 }
 
-
-void SimpleTracker::prepareSave() { }
-
-void SimpleTracker::postLoad() { }
 // =========== I O = H A N D L I N G ============
 
 
@@ -392,21 +396,36 @@ void SimpleTracker::setAverageSpeedPx(const QString &newValue){
 
 void SimpleTracker::setMinContourSize(int newValue){
     _minContourSize->setText(QString::number(newValue));
+    Q_EMIT update();
+}
+
+void SimpleTracker::setMaxContourSize(int newValue){
+    _maxContourSize->setText(QString::number(newValue));
+    Q_EMIT update();
 }
 
 void SimpleTracker::setNumberOfErosions(int newValue){
     _numberOfErosions->setText(QString::number(newValue));
+    Q_EMIT update();
 }
 
 void SimpleTracker::setNumberOfDilations(int newValue){
     _numberOfDilations->setText(QString::number(newValue));
+    Q_EMIT update();
 }
 
 void SimpleTracker::setDiffThreshold(int newValue){
     _diffThreshold->setText(QString::number(newValue));
+    Q_EMIT update();
 }
 
 void SimpleTracker::setBackgroundWeight(int newValue){
     float val = static_cast<float>(newValue) / 100.0f;
     _backgroundWeight->setText(QString::number(val));
+    Q_EMIT update();
+}
+
+void SimpleTracker::reset(){
+    resetTracks();
+    Q_EMIT update();
 }

@@ -29,11 +29,6 @@ private:
                                                                         std::vector<cv::RotatedRect> &contourEllipses,
 																		std::vector<size_t> alreadyTestedIndizies);
 
-    std::shared_ptr<FishPose> mergeContoursToFishPose(size_t trackedObjectIndex, size_t frame,
-                                                      std::vector<cv::RotatedRect> &contourEllipses);
-    std::shared_ptr<FishCandidate> mergeContoursToFishCandidates(size_t trackedObjectIndex, size_t frame,
-                                                                 std::vector<cv::RotatedRect> &contourEllipses);
-
     std::tuple<int , float> getNearestIndexFromFishPoses(FishPose &fishPose,
                                                          const std::vector<cv::RotatedRect> &fishPoses);
 };
