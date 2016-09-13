@@ -28,14 +28,15 @@ SimpleTracker::SimpleTracker(BioTracker::Core::Settings &settings)
     : TrackingAlgorithm(settings)
     , _backgroundInitialized(false)
     , _numberOfObjects(6)
-    , _mapper(new Mapper(m_trackedObjects, _numberOfObjects))
     , _averageSpeedPx(75.0f)
     , _minContourSize(new QLabel("5", getToolsWidget()))
     , _maxContourSize(new QLabel("250", getToolsWidget()))
-    , _numberOfErosions(new QLabel("2", getToolsWidget()))
-    , _numberOfDilations(new QLabel("0", getToolsWidget()))
+    , _numberOfErosions(new QLabel("3", getToolsWidget()))
+    , _numberOfDilations(new QLabel("1", getToolsWidget()))
     , _backgroundWeight(new QLabel("0.95", getToolsWidget()))
     , _diffThreshold(new QLabel("15", getToolsWidget()))
+    , _framesTillPromotion(new QLabel("30", getToolsWidget()))
+    , _mapper(new Mapper(m_trackedObjects, _numberOfObjects, _framesTillPromotion->text().toUInt()))
 {
     FishPose::_averageSpeed = _averageSpeedPx;
     FishPose::_averageSpeedSigma = std::sqrt(-(_averageSpeedPx*_averageSpeedPx/2) * (1/std::log(0.66f)));
@@ -122,9 +123,18 @@ SimpleTracker::SimpleTracker(BioTracker::Core::Settings &settings)
     layout->addWidget(_diffThreshold, 13, 2, 1, 1);
     layout->addWidget(diffThreshold, 14, 0, 1, 3);
 
+    auto framesTillPromotion = new QSlider(Qt::Horizontal);
+    framesTillPromotion->setValue(_framesTillPromotion->text().toInt());
+    framesTillPromotion->setMinimum(0);
+    framesTillPromotion->setMaximum(250);
+    connect(framesTillPromotion, SIGNAL(valueChanged(int)), this, SLOT(setFramesTillPromotion(int)));
+    layout->addWidget(new QLabel("frames till promotion"), 15, 0, 1, 2);
+    layout->addWidget(_framesTillPromotion, 15, 2, 1, 1);
+    layout->addWidget(framesTillPromotion, 16, 0, 1, 3);
+
     auto reset = new QPushButton("reset");
     connect(reset, SIGNAL(clicked()), this, SLOT(reset()));
-    layout->addWidget(reset, 15, 0, 1, 3);
+    layout->addWidget(reset, 17, 0, 1, 3);
 
     ui->setLayout(layout);
 }
@@ -360,7 +370,7 @@ void SimpleTracker::paintTrackedFishes(QPainter *painter, size_t frame){
 void SimpleTracker::resetTracks(){
     m_trackedObjects.clear();
     _backgroundInitialized = false;
-    _mapper = new Mapper(m_trackedObjects, _numberOfObjects);
+    _mapper = new Mapper(m_trackedObjects, _numberOfObjects, _framesTillPromotion->text().toUInt());
 }
 
 // =========== I O = H A N D L I N G ============
@@ -386,6 +396,7 @@ void SimpleTracker::mouseWheelEvent(QWheelEvent *) { }
 
 void SimpleTracker::setNumberOfObjects(const QString &newValue){
     _numberOfObjects = newValue.toUInt();
+    _mapper->setNumberOfObjects(newValue.toUInt());
 }
 
 void SimpleTracker::setAverageSpeedPx(const QString &newValue){
@@ -416,6 +427,12 @@ void SimpleTracker::setNumberOfDilations(int newValue){
 
 void SimpleTracker::setDiffThreshold(int newValue){
     _diffThreshold->setText(QString::number(newValue));
+    Q_EMIT update();
+}
+
+void SimpleTracker::setFramesTillPromotion(int newValue){
+    _framesTillPromotion->setText(QString::number(newValue));
+    _mapper->setFramesTillPromotion(static_cast<size_t>(newValue));
     Q_EMIT update();
 }
 

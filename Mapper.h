@@ -10,9 +10,13 @@
 
 class Mapper {
 public:
-    Mapper(std::vector<BioTracker::Core::TrackedObject> &trackedObjects, size_t numberOfObjects);
+    Mapper(std::vector<BioTracker::Core::TrackedObject> &trackedObjects,
+           size_t numberOfObjects, size_t framesTillPromotion);
 
 	void map(std::vector<cv::RotatedRect> &contourEllipses, size_t frame);
+
+    void setNumberOfObjects(size_t numberOfObjects);
+    void setFramesTillPromotion(size_t framesTillPromotion);
 
     std::vector<BioTracker::Core::TrackedObject>& getFishCandidates();
 
@@ -21,6 +25,7 @@ private:
     std::vector<BioTracker::Core::TrackedObject> _fishCandidates;
 
     size_t _numberOfObjects;
+    size_t _framesTillPromotion;
     size_t _lastId;
 
 

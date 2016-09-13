@@ -45,7 +45,6 @@ private:
     bool                        _backgroundInitialized;
     cv::Mat                     _background;
     size_t                      _numberOfObjects;
-    Mapper *					_mapper;
 
 	QMutex  lastFrameLock;
 	cv::Mat lastFrame;
@@ -69,6 +68,9 @@ private:
     QLabel *    _numberOfDilations;
     QLabel *    _backgroundWeight;
     QLabel *    _diffThreshold;
+	QLabel *    _framesTillPromotion;
+
+    Mapper *					_mapper;
 
 private Q_SLOTS:
     void setNumberOfObjects(const QString &newValue);
@@ -79,5 +81,6 @@ private Q_SLOTS:
     void setNumberOfDilations(int newValue);
     void setBackgroundWeight(int newValue);
     void setDiffThreshold(int newValue);
+	void setFramesTillPromotion(int newValue);
     void reset();
 };

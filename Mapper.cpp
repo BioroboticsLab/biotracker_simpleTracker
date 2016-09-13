@@ -8,9 +8,10 @@
 
 using namespace BioTracker::Core;
 // ================= P U B L I C ====================
-Mapper::Mapper(std::vector<TrackedObject> &trackedObjects, size_t numberOfObjects) :
+Mapper::Mapper(std::vector<TrackedObject> &trackedObjects, size_t numberOfObjects, size_t framesTillPromotion) :
     m_trackedObjects(trackedObjects)
     , _numberOfObjects(numberOfObjects)
+    , _framesTillPromotion(framesTillPromotion)
     , _lastId(1)
 {
     _fishCandidates = std::vector<TrackedObject>();
@@ -21,6 +22,13 @@ void Mapper::map(std::vector<cv::RotatedRect> &contourEllipses, size_t frame){
     // (1) Find the next contour belonging to each tracked fish
 
     std::vector<TrackedObject> fishes(m_trackedObjects);
+    for (size_t i = 0; i < fishes.size(); i++){
+        if(!fishes.at(i).hasValuesAtFrame(frame - 1)){
+            fishes.erase(fishes.begin() + i);
+            i--;
+        }
+    }
+    size_t nrOfObjectsInFrame = fishes.size();
     std::vector<std::tuple<size_t, std::shared_ptr<FishPose>>> newFishes;
 
     while(!fishes.empty() && !contourEllipses.empty()) {
@@ -41,15 +49,21 @@ void Mapper::map(std::vector<cv::RotatedRect> &contourEllipses, size_t frame){
                 m_trackedObjects[j].add(frame, fp);
             }
         }
-		if (!m_trackedObjects[j].hasValuesAtFrame(frame)) {
-			std::shared_ptr<FishPose> a = std::make_shared<FishPose>(*(m_trackedObjects[j].get<FishPose>(frame - 1).get()));
-			a->setNextPositionUnknown();
-			m_trackedObjects[j].add(frame, a);
-		}
+//		if (!m_trackedObjects[j].hasValuesAtFrame(frame)) {
+//			std::shared_ptr<FishPose> a = std::make_shared<FishPose>(*(m_trackedObjects[j].get<FishPose>(frame - 1).get()));
+//			a->setNextPositionUnknown();
+//			m_trackedObjects[j].add(frame, a);
+//		}
     }
 
     // (2) Try to find contours belonging to fish candidates, promoting to FishPose as appropriate
-    if (m_trackedObjects.size() < _numberOfObjects) {
+    if (nrOfObjectsInFrame < _numberOfObjects) {
+        for(size_t i = 0; i < _fishCandidates.size(); i++){
+            if(!_fishCandidates[i].hasValuesAtFrame(frame - 1)){
+                _fishCandidates.erase(_fishCandidates.begin() + i);
+                i--;
+            }
+        }
         std::vector<TrackedObject> fishCandidates(_fishCandidates);
         std::vector<std::tuple<size_t, std::shared_ptr<FishPose>>> newFishCandidates;
 
@@ -80,18 +94,22 @@ void Mapper::map(std::vector<cv::RotatedRect> &contourEllipses, size_t frame){
             }
         }
         // (2.5) Drop/Promote candidates.
-        for(int i = 0; i < static_cast<int>(_fishCandidates.size()) && m_trackedObjects.size() < _numberOfObjects; i++){
+        for(int i = 0; i < static_cast<int>(_fishCandidates.size()) && nrOfObjectsInFrame < _numberOfObjects; i++){
             if(_fishCandidates[i].hasValuesAtFrame(frame)){
                 // TODO: Score Threshold needed
                 int score = _fishCandidates[i].get<FishCandidate>(frame)->score();
-                if(score >= 30){
+                if(static_cast<size_t>(score) >= _framesTillPromotion){
                     std::move(_fishCandidates.begin() + i, _fishCandidates.begin() + i + 1, std::back_inserter(m_trackedObjects));
                     _fishCandidates.erase(_fishCandidates.begin() + i);
                     i--;
+                    nrOfObjectsInFrame++;
                 } else if (score < 0){
                     _fishCandidates.erase(_fishCandidates.begin() + i);
                     i--;
                 }
+            } else {
+                _fishCandidates.erase(_fishCandidates.begin() + i);
+                i--;
             }
         }
 
@@ -106,9 +124,18 @@ void Mapper::map(std::vector<cv::RotatedRect> &contourEllipses, size_t frame){
             newObject.add(frame, newFish);
             _fishCandidates.push_back(newObject);
         }
-    } else {
+    }
+    if (nrOfObjectsInFrame >= _numberOfObjects) {
         _fishCandidates.clear();
     }
+}
+
+
+void Mapper::setNumberOfObjects(size_t numberOfObjects){
+    _numberOfObjects = numberOfObjects;
+}
+void Mapper::setFramesTillPromotion(size_t framesTillPromotion){
+    _framesTillPromotion = framesTillPromotion;
 }
 
 std::vector<BioTracker::Core::TrackedObject>& Mapper::getFishCandidates(){
