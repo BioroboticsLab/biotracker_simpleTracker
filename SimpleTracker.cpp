@@ -211,7 +211,6 @@ void SimpleTracker::track(size_t frameNumber, const cv::Mat &frame) {
 }
 
 void SimpleTracker::paint (size_t frameNumber, BioTracker::Core::ProxyMat & p, const TrackingAlgorithm::View &view) {
-	std::cout << "paint: " << frameNumber << std::endl;
     {
         QMutexLocker locker(&lastFrameLock);
         lastFrame = p.getMat();
@@ -265,7 +264,6 @@ void SimpleTracker::paint (size_t frameNumber, BioTracker::Core::ProxyMat & p, c
 }
 
 void SimpleTracker::paintOverlay(size_t frame, QPainter *painter, const View &view) {
-	std::cout << "paintOverlay: " << frame << std::endl;
     if(view.name == SimpleTracker::ForegroundView.name) {
         if(_ellipsesFrame != frame){
 			std::vector<std::vector<cv::Point>> contours;
