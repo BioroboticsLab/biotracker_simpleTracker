@@ -34,7 +34,7 @@ cv::RotatedRect FishPose::last_known_position() const {
     return _last_known_position;
 }
 
-unsigned FishPose::age_of_last_known_position() const {
+size_t FishPose::age_of_last_known_position() const {
     return _age_of_last_known_position;
 }
 
