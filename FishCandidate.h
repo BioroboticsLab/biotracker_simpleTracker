@@ -27,9 +27,12 @@ private:
     template <class Archive>
     void serialize(Archive& ar)
     {
-		ar(CEREAL_NVP(_last_known_position),
+		ar(CEREAL_NVP(_last_known_position.center),
+           CEREAL_NVP(_last_known_position.size),
+           CEREAL_NVP(_last_known_position.angle),
 		   CEREAL_NVP(_age_of_last_known_position),
 		   CEREAL_NVP(_associated_color),
+		   CEREAL_NVP(_angle),
 		   CEREAL_NVP(_score));
     }
 };

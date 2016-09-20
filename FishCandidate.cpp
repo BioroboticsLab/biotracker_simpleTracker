@@ -1,5 +1,8 @@
 #include "FishCandidate.h"
 
+#include <cereal/types/polymorphic.hpp>
+#include <cereal/archives/json.hpp>
+
 FishCandidate::FishCandidate()
     : FishPose()
     , _score(1)
@@ -31,3 +34,4 @@ bool FishCandidate::operator==(const FishCandidate& other) const {
     return _last_known_position.center == other._last_known_position.center;
 }
 
+CEREAL_REGISTER_TYPE(FishCandidate)
