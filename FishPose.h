@@ -20,7 +20,7 @@ public:
     void setNextPositionUnknown();
 
     cv::RotatedRect last_known_position() const;
-    unsigned age_of_last_known_position() const;
+    size_t age_of_last_known_position() const;
 
     void set_associated_color(const cv::Scalar& color);
     cv::Scalar associated_color() const;
@@ -32,7 +32,7 @@ public:
 
 protected:
     cv::RotatedRect _last_known_position;
-    unsigned        _age_of_last_known_position;
+    size_t        _age_of_last_known_position;
     cv::Scalar      _associated_color;
     float           _angle;
 

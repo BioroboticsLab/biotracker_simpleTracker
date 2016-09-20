@@ -30,7 +30,7 @@ SimpleTracker::SimpleTracker(BioTracker::Core::Settings &settings)
     , _numberOfObjects(6)
     , _averageSpeedPx(75.0f)
     , _minContourSize(new QLabel("5", getToolsWidget()))
-    , _maxContourSize(new QLabel("250", getToolsWidget()))
+    , _maxContourSize(new QLabel("1500", getToolsWidget()))
     , _numberOfErosions(new QLabel("3", getToolsWidget()))
     , _numberOfDilations(new QLabel("1", getToolsWidget()))
     , _backgroundWeight(new QLabel("0.95", getToolsWidget()))
@@ -39,7 +39,7 @@ SimpleTracker::SimpleTracker(BioTracker::Core::Settings &settings)
     , _mapper(new Mapper(m_trackedObjects, _numberOfObjects, _framesTillPromotion->text().toUInt()))
 {
     FishPose::_averageSpeed = _averageSpeedPx;
-    FishPose::_averageSpeedSigma = std::sqrt(-(_averageSpeedPx*_averageSpeedPx/2) * (1/std::log(0.66f)));
+    FishPose::_averageSpeedSigma = std::sqrt(-(_averageSpeedPx*_averageSpeedPx/2) * (1/std::log(0.33f)));
     // initialize gui
     auto ui = getToolsWidget();
     auto layout = new QGridLayout();
@@ -70,63 +70,63 @@ SimpleTracker::SimpleTracker(BioTracker::Core::Settings &settings)
     layout->addWidget(averageSpeedPx, 2, 2, 1, 1);
 
     auto minContourSize = new QSlider(Qt::Horizontal);
-    minContourSize->setValue(_minContourSize->text().toInt());
     minContourSize->setMinimum(5);
     minContourSize->setMaximum(250);
+    minContourSize->setValue(_minContourSize->text().toInt());
     connect(minContourSize, SIGNAL(valueChanged(int)), this, SLOT(setMinContourSize(int)));
     layout->addWidget(new QLabel("minimal contour size"), 3, 0, 1, 2);
     layout->addWidget(_minContourSize, 3, 2, 1, 1);
     layout->addWidget(minContourSize, 4, 0, 1, 3);
 
     auto maxContourSize = new QSlider(Qt::Horizontal);
-    maxContourSize->setValue(_maxContourSize->text().toInt());
     maxContourSize->setMinimum(5);
-    maxContourSize->setMaximum(250);
+    maxContourSize->setMaximum(1500);
+    maxContourSize->setValue(_maxContourSize->text().toInt());
     connect(maxContourSize, SIGNAL(valueChanged(int)), this, SLOT(setMaxContourSize(int)));
     layout->addWidget(new QLabel("maximal contour size"), 5, 0, 1, 2);
     layout->addWidget(_maxContourSize, 5, 2, 1, 1);
     layout->addWidget(maxContourSize, 6, 0, 1, 3);
 
     auto numberOfErosions = new QSlider(Qt::Horizontal);
-    numberOfErosions->setValue(_numberOfErosions->text().toInt());
     numberOfErosions->setMinimum(0);
     numberOfErosions->setMaximum(25);
+    numberOfErosions->setValue(_numberOfErosions->text().toInt());
     connect(numberOfErosions, SIGNAL(valueChanged(int)), this, SLOT(setNumberOfErosions(int)));
     layout->addWidget(new QLabel("number of erosions"), 7, 0, 1, 2);
     layout->addWidget(_numberOfErosions, 7, 2, 1, 1);
     layout->addWidget(numberOfErosions, 8, 0, 1, 3);
 
     auto numberOfDilations = new QSlider(Qt::Horizontal);
-    numberOfDilations->setValue(_numberOfDilations->text().toInt());
     numberOfDilations->setMinimum(0);
     numberOfDilations->setMaximum(25);
+    numberOfDilations->setValue(_numberOfDilations->text().toInt());
     connect(numberOfDilations, SIGNAL(valueChanged(int)), this, SLOT(setNumberOfDilations(int)));
     layout->addWidget(new QLabel("number of dilations"), 9, 0, 1, 2);
     layout->addWidget(_numberOfDilations, 9, 2, 1, 1);
     layout->addWidget(numberOfDilations, 10, 0, 1, 3);
 
     auto backgroundWeight = new QSlider(Qt::Horizontal);
-    backgroundWeight->setValue(static_cast<int>(_backgroundWeight->text().toFloat() * 100));
     backgroundWeight->setMinimum(0);
     backgroundWeight->setMaximum(100);
+    backgroundWeight->setValue(static_cast<int>(_backgroundWeight->text().toFloat() * 100));
     connect(backgroundWeight, SIGNAL(valueChanged(int)), this, SLOT(setBackgroundWeight(int)));
     layout->addWidget(new QLabel("Alpha"), 11, 0, 1, 2);
     layout->addWidget(_backgroundWeight, 11, 2, 1, 1);
     layout->addWidget(backgroundWeight, 12, 0, 1, 3);
 
     auto diffThreshold = new QSlider(Qt::Horizontal);
-    diffThreshold->setValue(_diffThreshold->text().toInt());
     diffThreshold->setMinimum(0);
     diffThreshold->setMaximum(255);
+    diffThreshold->setValue(_diffThreshold->text().toInt());
     connect(diffThreshold, SIGNAL(valueChanged(int)), this, SLOT(setDiffThreshold(int)));
     layout->addWidget(new QLabel("Threshold"), 13, 0, 1, 2);
     layout->addWidget(_diffThreshold, 13, 2, 1, 1);
     layout->addWidget(diffThreshold, 14, 0, 1, 3);
 
     auto framesTillPromotion = new QSlider(Qt::Horizontal);
-    framesTillPromotion->setValue(_framesTillPromotion->text().toInt());
     framesTillPromotion->setMinimum(0);
     framesTillPromotion->setMaximum(250);
+    framesTillPromotion->setValue(_framesTillPromotion->text().toInt());
     connect(framesTillPromotion, SIGNAL(valueChanged(int)), this, SLOT(setFramesTillPromotion(int)));
     layout->addWidget(new QLabel("frames till promotion"), 15, 0, 1, 2);
     layout->addWidget(_framesTillPromotion, 15, 2, 1, 1);
@@ -182,7 +182,7 @@ void SimpleTracker::track(size_t frameNumber, const cv::Mat &frame) {
 
     std::vector<std::vector<cv::Point>> contours;
     cv::Mat foreground = _foreground.clone();
-    cv::findContours(foreground, contours, CV_RETR_LIST, CV_CHAIN_APPROX_NONE);
+    cv::findContours(foreground, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE);
 
     cv::cvtColor(_foreground, _foreground, cv::COLOR_GRAY2RGB);
 
@@ -268,9 +268,11 @@ void SimpleTracker::paint (size_t frameNumber, BioTracker::Core::ProxyMat & p, c
 void SimpleTracker::paintOverlay(size_t frame, QPainter *painter, const View &view) {
     if(view.name == SimpleTracker::ForegroundView.name) {
         if(_ellipsesFrame != frame){
-            cv::Mat foreground = _foreground.clone();
-            std::vector<std::vector<cv::Point>> contours;
-            cv::findContours(foreground, contours, CV_RETR_LIST, CV_CHAIN_APPROX_NONE);
+			std::vector<std::vector<cv::Point>> contours;
+			cv::Mat foreground = _foreground.clone();
+
+			cv::cvtColor(foreground, foreground, cv::COLOR_RGB2GRAY);
+            cv::findContours(foreground, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE);
 
             for(size_t i = 0; i < contours.size(); i++) {
                 if(contours[i].size() < _minContourSize->text().toUInt() || contours[i].size() > _maxContourSize->text().toUInt()) {
@@ -316,7 +318,7 @@ void SimpleTracker::inputChanged() {
     resetTracks();
 }
 
-// =============== H E L P E R S ================
+//=============== H E L P E R S ================
 
 void SimpleTracker::paintTrackedFishes(QPainter *painter, size_t frame){
     for( size_t i = 0; i < m_trackedObjects.size(); i++){
@@ -404,7 +406,7 @@ void SimpleTracker::setNumberOfObjects(const QString &newValue){
 void SimpleTracker::setAverageSpeedPx(const QString &newValue){
     _averageSpeedPx = newValue.toFloat();
     FishPose::_averageSpeed = _averageSpeedPx;
-    FishPose::_averageSpeedSigma = std::sqrt(-(_averageSpeedPx*_averageSpeedPx/2) * (1/std::log(0.66f)));
+    FishPose::_averageSpeedSigma = std::sqrt(-(_averageSpeedPx*_averageSpeedPx/2) * (1/std::log(0.33f)));
 }
 
 void SimpleTracker::setMinContourSize(int newValue){
