@@ -143,8 +143,9 @@ const TrackingAlgorithm::View SimpleTracker::ForegroundView {"Foreground"};
 const TrackingAlgorithm::View SimpleTracker::BackgroundView {"Background"};
 
 void SimpleTracker::track(size_t frameNumber, const cv::Mat &frame) {
-    if(!_backgroundInitialized){
-        cv::cvtColor(frame.clone(), _background, CV_RGB2GRAY);
+    if(!_backgroundInitialized || _background.rows != frame.rows || _background.cols != frame.cols){
+        _background = frame.clone();
+        cv::cvtColor(_background, _background, CV_RGB2GRAY);
         _backgroundInitialized = true;
     }
     cv::Mat frameGRAY;
@@ -215,8 +216,9 @@ void SimpleTracker::paint (size_t frameNumber, BioTracker::Core::ProxyMat & p, c
         QMutexLocker locker(&lastFrameLock);
         lastFrame = p.getMat();
     }
-    if(!_backgroundInitialized){
-        cv::cvtColor(p.getMat(), _background, CV_RGB2GRAY);
+    if(!_backgroundInitialized || _background.rows != p.getMat().rows || _background.cols != p.getMat().cols){
+        _background = p.getMat();
+        cv::cvtColor(_background, _background, CV_RGB2GRAY);
         _backgroundInitialized = true;
     }
     if(view.name == SimpleTracker::ForegroundView.name) {
